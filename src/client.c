@@ -123,7 +123,12 @@ int connect_and_handshake() {
     serv.sin_port = htons(5555);
     struct hostent *host = gethostbyname("server");
     if (!host) {
-        printf("DNS resolve 실패\n");
+        printf("Docker DNS 사용 불가 → 로컬 모드로 전환\n");
+        host = gethostbyname("127.0.0.1");
+    }
+
+    if (!host) {
+        printf("서버 주소를 찾을 수 없습니다.\n");
         close(g_sock);
         return -1;
     }
