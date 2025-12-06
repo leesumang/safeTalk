@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: safetalk-server
+    ports:
+      - "5555:5555"
+    networks:
+      - safetalk-net
+
+  client1:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: safetalk-client1
+    depends_on:
+      - server
+    networks:
+      - safetalk-net
+    stdin_open: true
+    tty: true
+    command: ["./client", "Alice", "--auto"]
+
+  client2:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: safetalk-client2
+    depends_on:
+      - server
+    networks:
+      - safetalk-net
+    stdin_open: true
+    tty: true
+    command: ["./client", "Bob", "--auto"]
+
+networks:
+  safetalk-net:
+    driver: bridge

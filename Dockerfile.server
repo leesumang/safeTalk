@@ -1,0 +1,14 @@
+FROM gcc:latest
+
+WORKDIR /app
+
+COPY ./src /app/src
+COPY ./include /app/include
+COPY Makefile /app/Makefile
+
+RUN apt-get update && apt-get install -y libssl-dev
+
+RUN make clean && make server
+
+EXPOSE 5555
+CMD ["./server"]
