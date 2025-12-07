@@ -21,6 +21,7 @@ void trim_newline(char *s) {
 
 // 키 교환
 int do_key_exchange(int sock) {
+    // 1) 각자 X25519 키 쌍 생성 후 공개키 교환
     EVP_PKEY *my_key = generate_dh_keypair();
     if (!my_key) return -1;
 
@@ -42,6 +43,7 @@ int do_key_exchange(int sock) {
         EVP_PKEY_new_raw_public_key(EVP_PKEY_X25519, NULL, peer_buf, peer_len);
     if (!peer_key) return -1;
 
+    // 2) 공유 비밀키 → AES 세션키 파생
     size_t secret_len = 0;
     unsigned char *secret = derive_shared_secret(my_key, peer_key, &secret_len);
     if (!secret) return -1;
@@ -67,6 +69,7 @@ void *send_thread(void *arg) {
         trim_newline(input);
 
         if (!strcmp(input, "/exit")) {
+            // __LEFT__ 신호로 상대에게 종료 알림
             send_secure_message(g_sock, g_aes_key, "__LEFT__");
             g_running = 0;
             break;
@@ -101,6 +104,7 @@ void *recv_thread(void *arg) {
         }
 
         if (!strcmp(plain, "__LEFT__")) {
+            // 상대가 /exit 입력한 경우
             printf("\n[client] 상대가 방에서 나갔습니다.\n> ");
             g_running = 0;
             break;

@@ -25,6 +25,7 @@ int other_index(int idx) { return idx == 0 ? 1 : 0; }
 
 // 공개키 교환
 void exchange_keys() {
+    // 각 클라이언트의 공개키를 서로에게 그대로 릴레이
     if (!clients[0].dh_pubkey || !clients[1].dh_pubkey) {
         printf("[server] 공개키 준비 안 됨 (NULL)\n");
         return;
@@ -57,6 +58,7 @@ void *client_thread(void *arg) {
     int sock = clients[idx].sock;
     char buf[BUF_SIZE];
 
+    // 1) 닉네임 + 공개키 수신
     if (read(sock, clients[idx].nickname, sizeof(clients[idx].nickname)) <= 0) {
         clients[idx].sock = -1;
         close(sock);
@@ -72,6 +74,7 @@ void *client_thread(void *arg) {
     clients[idx].dh_pubkey =
         EVP_PKEY_new_raw_public_key(EVP_PKEY_X25519, NULL, pub_buf, pub_len);
 
+    // 2) 두 명이 모두 연결되면 공개키를 상호 전송 (한 번만)
     pthread_mutex_lock(&g_mutex);
     if (clients[0].sock > 0 &&
         clients[1].sock > 0 &&
@@ -91,11 +94,12 @@ void *client_thread(void *arg) {
             pthread_mutex_lock(&g_mutex);
             clients[idx].sock = -1;
             g_keys_exchanged = 0;
-            pthread_mutex_unlock(&g_mutex);
-            close(sock);
-            break;
-        }
+        pthread_mutex_unlock(&g_mutex);
+        close(sock);
+        break;
+    }
 
+        // 3) 받은 암호문을 상대 소켓에 그대로 포워딩
         int other = other_index(idx);
         pthread_mutex_lock(&g_mutex);
         int other_sock = clients[other].sock;
